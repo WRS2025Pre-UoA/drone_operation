@@ -92,8 +92,8 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr click_;// ボタンクリック座標を受け取るsubscriber
     rclcpp::TimerBase::SharedPtr view_;// ボタン画面を定期的に流すタイマー
     rclcpp::TimerBase::SharedPtr timer_;// 一定間隔で画像を流す
-    rclcpp::TimerBase::SharedPtr color_reset_timer_;
-    
+    rclcpp::TimerBase::SharedPtr color_reset_timer_;// 一定時間待って、ボタンの色を白に戻す
+
     std::map<std::string, std::shared_ptr<rclcpp::Publisher<MyAdaptedType>>> image_publishers_;// 連続処理ノードに画像を流す
 
     std::map<std::string, rclcpp::Subscription<std_msgs::msg::String>::SharedPtr> receive_data_;// 検出結果をうけとる　

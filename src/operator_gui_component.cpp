@@ -257,31 +257,6 @@ void DroneGUI::publish_images()
         }
     }
 }
-// void DroneGUI::publish_images()
-// {
-//     for (auto &[key, flag] : bool_flags_)
-//     {
-//         RCLCPP_INFO_STREAM(this->get_logger(), "Checking key: " << key << ", flag: " << flag);
-//         if (flag)
-//         {
-//             RCLCPP_INFO_STREAM(this->get_logger(), "Flag true for: " << key);
-//             double elapsed = (this->now() - start_times_[key]).seconds();
-//             RCLCPP_INFO_STREAM(this->get_logger(), "Elapsed time: " << elapsed << " sec");
-            
-//             if (elapsed < check_duration_sec)
-//             {
-//                 std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(temporary_image);
-//                 RCLCPP_INFO_STREAM(this->get_logger(), "Publish image address: " << &(msg_image->data));
-//                 image_publishers_[key]->publish(std::move(msg_image));
-//             }
-//             else
-//             {
-//                 flag = false;
-//                 start_times_[key] = rclcpp::Time(0);
-//             }
-//         }
-//     }
-// }
 
 } // namespace component_operator_gui
 
