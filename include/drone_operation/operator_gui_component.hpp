@@ -44,9 +44,11 @@ public:
     int btn_space_row = 5, btn_space_col = 30;//ボタン間のスペース
 
     // 中身
-    std::vector<std::string> buttons_name;//表示しているボタンのリスト
+    std::vector<std::string> buttons_name_;//表示しているボタンのリスト
     std::vector<Button> buttons_; // ボタン位置、サイズのリスト
     cv::Size btn_size = cv::Size(btn_width,btn_height);
+
+    std::vector<Button> another_box_;
 
     // 最新の値を格納確認するリスト----------------------------------
     // std::vector<std::map<std::string, bool>> receive_list;
@@ -70,11 +72,14 @@ public:
     double check_duration_sec;
 
     // 受け取ったメッセージを格納-------------------------------------
-    std_msgs::msg::String id, result_data;// 確認ノードへ報告を行う時に必要なid 結果を格納
-    cv::Mat temporary_image;// sensor_msgsで送られてくるので一時的にcv::Matへ
-    std::unique_ptr<cv::Mat> result_image;// 確認ノードへ送信する画像
+    std_msgs::msg::String qr_id, result_data;// 確認ノードへ報告を行う時に必要なid 結果を格納
+    cv::Mat temporary_image, receive_image, receive_qr_image;// sensor_msgsで送られてくるので一時的にcv::Matへ
 
+     // 画面が起動しているかflag
+    bool send_confirm_flag = false;
     std::vector<std::string> trigger_list = {"pressure", "qr", "cracks"};
+    std::vector<std::string> confirm_list = {"pressure", "cracks"};
+
     explicit DroneGUI(const rclcpp::NodeOptions &options);
     DroneGUI() : DroneGUI(rclcpp::NodeOptions{}) {}
 
@@ -83,7 +88,7 @@ private:
     void topic_callback(const std_msgs::msg::String::SharedPtr msg);// 検出結果をうけとった時に行う処理関数
     void timer_callback();// 定期的にボタン画像を流す
     void mouse_click_callback(const geometry_msgs::msg::Point::SharedPtr msg);// ボタン画面にクリックした時の座標をもとに行う処理関数
-    void rewriteButton(cv::Point sp, cv::Point ep, std::string text, int btn_W, int btn_H, cv::Scalar color) const;// 指定したボタンの色、表示内容を変更
+    void rewriteButton(Button btn, std::string text, cv::Scalar color) const;// 指定したボタンの色、表示内容を変更
     void rewriteMessage();
     void process(std::string topic_name);// クリックしたボタンに対応した処理を行う関数
     void publish_images();// 連続処理ノードへ画像を流す関数
@@ -93,6 +98,8 @@ private:
     rclcpp::TimerBase::SharedPtr view_;// ボタン画面を定期的に流すタイマー
     rclcpp::TimerBase::SharedPtr timer_;// 一定間隔で画像を流す
     rclcpp::TimerBase::SharedPtr color_reset_timer_;// 一定時間待って、ボタンの色を白に戻す
+     rclcpp::TimerBase::SharedPtr message_reset_timer_;// 
+    rclcpp::TimerBase::SharedPtr reopen_window_;// 確認画面が表示されてるときにsendボタンが押されたとき
 
     std::map<std::string, std::shared_ptr<rclcpp::Publisher<MyAdaptedType>>> image_publishers_;// 連続処理ノードに画像を流す
 
@@ -101,10 +108,12 @@ private:
 
     rclcpp::Subscription<MyAdaptedType>::SharedPtr receive_raw_image_;// DRONEから来る生画像
 
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr dt_qr_publisher_;// 確認ノードへidを送る
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr dt_qr_id_publisher_;// 確認ノードへidを送る
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr dt_data_publisher_;// 確認ノードへ検出結果を送る
     rclcpp::Publisher<MyAdaptedType>::SharedPtr dt_image_publisher_;// 確認ノードへ検出画像を送る
-    
+    rclcpp::Publisher<MyAdaptedType>::SharedPtr dt_qr_image_publisher_;// 確認ノードへ検出画像を送る
+    rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr dt_flag_subscriber_;// 送信をしたか否か send or back
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr dt_flag_;// 画面起動の信号
 };
 
 } // namespace component_operator_gui
