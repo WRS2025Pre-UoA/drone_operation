@@ -31,3 +31,12 @@
 - sendボタンを押した場合、確認画面ノード(misora2_dt_client)を表示
 - 送信が正常に完了した場合 -> 保持しているデータを初期化する
 - 送信が未完了の場合 -> そのまま保持
+
+## 実行コード
+~~~bash!
+git clone git@github.com:WRS2025Pre-UoA/drone_operation.git
+cd [ワーkスペース]
+colcon build
+source install/setup.bash
+ros2 run drone_operation operator_gui_node --ros-args -p mode:=P[1~4,6] -p check_duration_sec:=1.0 -p timer_interval_ms:=500
+~~~
