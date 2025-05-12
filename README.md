@@ -38,5 +38,5 @@ git clone git@github.com:WRS2025Pre-UoA/drone_operation.git
 cd [ワーkスペース]
 colcon build
 source install/setup.bash
-ros2 run drone_operation operator_gui_node --ros-args -p mode:=P[1~4,6] -p check_duration_sec:=1.0 -p timer_interval_ms:=500
+ros2 run drone_operation operator_gui_node --ros-args -p mode:=P<1~4,6> -p check_duration_sec:=1.0 -p timer_interval_ms:=500
 ~~~
