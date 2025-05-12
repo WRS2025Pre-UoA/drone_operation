@@ -11,6 +11,9 @@
  - 以下のトピックを選択して表示
     - /drone_gui_with_buttons：ボタン付きGUI画面
     - /drone_gui_with_buttons_mouse_left：マウスクリックの検知
+
+### pressure,qr,crakcsのボタンを押した場合
+ - check_duration_sec / timer_interval_ms枚の画像を送信後、送信終了の合図として黒画像を流す
 ### 画面下部のデータ表示
  - 現在保持している報告データの状態が簡易的に表示される
     - qr : True / False  qrデータを保持している(T)、していない(F)
