@@ -8,8 +8,26 @@ DroneGUI::DroneGUI(const rclcpp::NodeOptions &options)
     // ミッションごとにモードを変更------------------------------------------------------------------------------------------
     this->declare_parameter("mode", "P6");
     std::string param = this->get_parameter("mode").as_string();
-    RCLCPP_INFO(this->get_logger(), "Received my_parameter: %s", param.c_str());
+    RCLCPP_INFO(this->get_logger(), "Received mode: %s", param.c_str());
+
+    // ドローンから来る画像に長方形の枠を設ける-------------------------------------------------------------------------------
+    this->declare_parameter("top_left_x", 100);
+    this->declare_parameter("top_left_y", 100);
+    this->declare_parameter("rect_width", 300);
+    this->declare_parameter("rect_height", 300);
+
+    int top_left_x,top_left_y,rect_width,rect_height;
+    this->get_parameter("top_left_x", top_left_x);
+    this->get_parameter("top_left_y", top_left_y);
+    this->get_parameter("rect_width", rect_width);
+    this->get_parameter("rect_height", rect_height);
+    RCLCPP_INFO_STREAM(this->get_logger(), "Received top_left_x: "<< top_left_x);
+    RCLCPP_INFO_STREAM(this->get_logger(), "Received top_left_y: "<< top_left_y);
+    RCLCPP_INFO_STREAM(this->get_logger(), "Received rect_width: "<< rect_width);
+    RCLCPP_INFO_STREAM(this->get_logger(), "Received rect_height: "<< rect_height);
     
+    cv::Point top_left = cv::Point(top_left_x, top_left_y);
+    cv::Point buttom_right = cv::Point(top_left_x+rect_width, top_left_y+rect_height);
     // 画像送信時間、間隔をパラメータにする------------------------------------------------------------------------------------
     this->declare_parameter<double>("check_duration_sec",1.0);
     this->declare_parameter<int>("timer_interval_ms",100);
@@ -80,8 +98,23 @@ DroneGUI::DroneGUI(const rclcpp::NodeOptions &options)
 
     // Droneから未加工な画像(pressureなどが処理に掛ける画像)　disaster_reportやdebris_removalのため
     receive_raw_image_ = this->create_subscription<MyAdaptedType>("raw_image",10,
-        [this](const cv::Mat msg){
+        [this, rect_width, rect_height, top_left, buttom_right](const cv::Mat msg){
             temporary_image = msg;
+            // RCLCPP_INFO_STREAM(this->get_logger(), "receive image from drone");
+            temp_image_with_rect = temporary_image.clone();
+            bool is_rect_inside_image =
+                top_left.x >= 0 && top_left.y >= 0 &&
+                (top_left.x + rect_width) <= temp_image_with_rect.cols &&
+                (top_left.y + rect_height) <= temp_image_with_rect.rows;
+            if(!is_rect_inside_image){
+                RCLCPP_WARN_STREAM(this->get_logger(), "Requested crop area is outside image bounds. Skipping crop.");
+                cropped_temp_image = temp_image_with_rect.clone();  // fallback  
+            }else{
+                cv::rectangle(temp_image_with_rect, top_left, buttom_right, cv::Scalar(255, 0, 0), 5);
+                cropped_temp_image = cv::Mat(temporary_image, cv::Rect(top_left.x, top_left.y, rect_width, rect_height));
+                // RCLCPP_INFO_STREAM(this->get_logger(), "remake img w: " << temp_image_with_rect.cols << " h: " << temp_image_with_rect.rows);
+                // RCLCPP_INFO_STREAM(this->get_logger(), "cropped img w: " << cropped_temp_image.cols << " h: " << cropped_temp_image.rows);
+            }
         });
 
     // デジタルツインへ上げるpublisher初期化-----------------------------------------------------------------------------------
@@ -112,6 +145,8 @@ DroneGUI::DroneGUI(const rclcpp::NodeOptions &options)
 
     // ボタンの画像を送信するpublisher初期化
     publish_gui_ = this->create_publisher<MyAdaptedType>("drone_gui_with_buttons",1);
+    // ドローンからの画像(切り抜き領域込み)を送信するPublisher初期化
+    publish_operator_image_ = this->create_publisher<MyAdaptedType>("drone_image_with_rect",1);
 
     // ボタンのクリック判定subscriberを作成
     click_ = this->create_subscription<geometry_msgs::msg::Point>(
@@ -155,7 +190,14 @@ cv::Mat DroneGUI::setup(){
 // 定期的にpublish
 void DroneGUI::timer_callback() {
     rewriteMessage();
-    if(not(mat.empty()))publish_gui_->publish(mat);
+    if(not(mat.empty())){
+        publish_gui_->publish(mat);
+        // RCLCPP_INFO_STREAM(this->get_logger(), "publish button gui");
+    }
+    if(not(temp_image_with_rect.empty())){
+        publish_operator_image_->publish(temp_image_with_rect);
+        // RCLCPP_INFO_STREAM(this->get_logger(), "publish remake image");
+    }
 }
 
 // ボタンごとの信号処理--------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -176,7 +218,7 @@ void DroneGUI::process(std::string topic_name) {
             result_data.data = "CLOSE";
         }
         
-        cv::Mat result_image = temporary_image;
+        cv::Mat result_image = cropped_temp_image;
         RCLCPP_INFO_STREAM(this->get_logger(), "Send image size: " << result_image.size());
         dt_data_publisher_->publish(result_data);
         dt_image_publisher_->publish(result_image);
@@ -307,7 +349,7 @@ void DroneGUI::publish_images()
         {
             if((this->now() - start_times_[key]).seconds() < check_duration_sec)
             {
-                std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(temporary_image);
+                std::unique_ptr<cv::Mat> msg_image = std::make_unique<cv::Mat>(cropped_temp_image);
                 RCLCPP_INFO_STREAM(this->get_logger(),"Publish image address: "<< &(msg_image->data));
                 image_publishers_[key]->publish(std::move(msg_image));
             } else {

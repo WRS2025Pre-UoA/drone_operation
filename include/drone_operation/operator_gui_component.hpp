@@ -71,9 +71,18 @@ public:
     };// 信号を受け取ってから1secとカウントするため
     double check_duration_sec;
 
+    // ドローンからの画像をcv::Matで一時保存 sensor_msgs -> cv::Mat
+    cv::Mat temporary_image;
+    cv::Mat temp_image_with_rect; // 切り抜き枠(長方形)を設けた画像　rqtで表示する
+    // 切り抜き領域座標
+    // cv::Point top_left,buttom_right;// 左上(x,y) 右下(x,y)
+    // int rect_width, rect_height;
+    // 切り抜かれた画像
+    cv::Mat cropped_temp_image;
+
     // 受け取ったメッセージを格納-------------------------------------
     std_msgs::msg::String qr_id, result_data;// 確認ノードへ報告を行う時に必要なid 結果を格納
-    cv::Mat temporary_image, receive_image, receive_qr_image;// sensor_msgsで送られてくるので一時的にcv::Matへ
+    cv::Mat receive_image, receive_qr_image;// sensor_msgsで送られてくるので一時的にcv::Matへ
 
      // 画面が起動しているかflag
     bool send_confirm_flag = false;
@@ -94,6 +103,7 @@ private:
     void publish_images();// 連続処理ノードへ画像を流す関数
 
     rclcpp::Publisher<MyAdaptedType>::SharedPtr publish_gui_;// ボタン画面を流すpublisher
+    rclcpp::Publisher<MyAdaptedType>::SharedPtr publish_operator_image_;// 受け取ったドローンの画像に切り抜き枠を設けた画像を流すpublisher
     rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr click_;// ボタンクリック座標を受け取るsubscriber
     rclcpp::TimerBase::SharedPtr view_;// ボタン画面を定期的に流すタイマー
     rclcpp::TimerBase::SharedPtr timer_;// 一定間隔で画像を流す
