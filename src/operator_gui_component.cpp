@@ -111,7 +111,9 @@ DroneGUI::DroneGUI(const rclcpp::NodeOptions &options)
                 cropped_temp_image = temp_image_with_rect.clone();  // fallback  
             }else{
                 cv::rectangle(temp_image_with_rect, top_left, buttom_right, cv::Scalar(255, 0, 0), 5);
+                cv::cvtColor(temp_image_with_rect, temp_image_with_rect, cv::COLOR_BGR2RGB);
                 cropped_temp_image = cv::Mat(temporary_image, cv::Rect(top_left.x, top_left.y, rect_width, rect_height));
+                cv::cvtColor(cropped_temp_image, cropped_temp_image, cv::COLOR_BGR2RGB);
                 // RCLCPP_INFO_STREAM(this->get_logger(), "remake img w: " << temp_image_with_rect.cols << " h: " << temp_image_with_rect.rows);
                 // RCLCPP_INFO_STREAM(this->get_logger(), "cropped img w: " << cropped_temp_image.cols << " h: " << cropped_temp_image.rows);
             }
